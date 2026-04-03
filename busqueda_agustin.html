@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuscadorIA — Búsqueda Especial para Agustín</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white:      #ffffff;
+    --off:        #fff8f8;
+    --cream:      #fff0f0;
+    --border:     #f0d8d8;
+    --text:       #1a1214;
+    --muted:      #a07878;
+    --red:        #e63946;
+    --red-light:  #fff0f0;
+    --red-dark:   #b52530;
+    --red-mid:    #f47a82;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--white);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .hearts-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .fheart {
+    position: absolute;
+    opacity: 0;
+    animation: floatUp linear infinite;
+    color: #e63946;
+    user-select: none;
+    line-height: 1;
+  }
+
+  @keyframes floatUp {
+    0%   { opacity: 0;    transform: translateY(0) scale(0.8) rotate(-6deg); }
+    10%  { opacity: 0.15; }
+    80%  { opacity: 0.10; }
+    100% { opacity: 0;    transform: translateY(-110vh) scale(1.1) rotate(6deg); }
+  }
+
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); }
+  .logo span { color: var(--red); }
+
+  .header-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+    animation: blink 2s ease infinite;
+  }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .main {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 56px 40px 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .intro-banner {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 40px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .intro-emoji { font-size: 28px; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+
+  .intro-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--red-dark);
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .intro-desc { font-size: 13px; color: var(--muted); font-weight: 300; line-height: 1.7; }
+
+  .page-title { font-family: 'DM Serif Display', serif; font-size: 40px; line-height: 1.1; margin-bottom: 10px; }
+  .page-title em { font-style: italic; color: var(--red); }
+
+  .page-desc { font-size: 14px; color: var(--muted); font-weight: 300; margin-bottom: 48px; line-height: 1.7; }
+
+  .section { margin-bottom: 36px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    background: var(--cream);
+    border: 1px solid var(--border);
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .section-title { font-size: 10px; font-weight: 500; letter-spacing: 1.8px; text-transform: uppercase; color: var(--muted); }
+
+  .field-group { display: flex; flex-direction: column; gap: 2px; }
+
+  .field-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 13px 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    user-select: none;
+  }
+
+  .field-row:hover { background: var(--off); border-color: var(--border); }
+  .field-row.checked { background: var(--red-light); border-color: rgba(230,57,70,0.2); }
+
+  .cb {
+    width: 17px; height: 17px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    background: var(--white);
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+
+  .field-row.checked .cb { background: var(--red); border-color: var(--red-dark); }
+
+  .check-icon {
+    display: none;
+    width: 9px; height: 5px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translateY(-1px);
+  }
+  .field-row.checked .check-icon { display: block; }
+
+  .field-content { flex: 1; }
+  .field-text { font-size: 15px; color: var(--text); line-height: 1.45; }
+  .field-sub { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 2px; line-height: 1.3; }
+  .field-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    background: var(--red);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 4px;
+    letter-spacing: 0.3px;
+  }
+
+  .color-pills { display: inline-flex; gap: 4px; margin: 0 5px; vertical-align: middle; }
+  .cpill { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.1); display: inline-block; }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  .filters-box {
+    background: var(--off);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+  }
+
+  .filters-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .filters-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+
+  .ftag {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 11px;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(3px);
+    animation: tagIn 0.25s ease forwards;
+  }
+
+  @keyframes tagIn { to { opacity: 1; transform: translateY(0); } }
+
+  .search-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .search-btn:hover { background: var(--red-dark); }
+  .search-btn:active { transform: scale(0.99); }
+  .search-btn:disabled { opacity: 0.7; cursor: default; }
+
+  .btn-dots { display: none; gap: 5px; }
+  .bdot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+    animation: bdotpulse 0.8s ease infinite;
+  }
+  .bdot:nth-child(2) { animation-delay: 0.15s; }
+  .bdot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bdotpulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  .progress-wrap { display: none; margin-top: 24px; }
+
+  .progress-top {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+
+  .progress-bar { height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+  .progress-fill { height: 100%; background: var(--red); border-radius: 2px; width: 0%; transition: width 0.5s ease; }
+
+  /* ── RESULTADO ── */
+  .result-card {
+    display: none;
+    margin-top: 32px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--white);
+    animation: fadeUp 0.45s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .rc-header {
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+  }
+
+  .rc-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+
+  .rc-match {
+    margin-left: auto;
+    background: var(--red);
+    color: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 3px 11px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  .rc-body { padding: 28px 24px; }
+
+  .rc-pretitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .rc-name { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--text); margin-bottom: 4px; }
+  .rc-tagline { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 20px; }
+
+  .rc-desc {
+    font-size: 14px;
+    line-height: 1.85;
+    color: #4a3838;
+    font-weight: 300;
+    margin-bottom: 22px;
+  }
+
+  .rc-desc strong { font-weight: 500; color: var(--text); }
+  .rc-desc em { font-style: italic; color: var(--muted); }
+
+  .rc-attrs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .rc-attr {
+    background: var(--off);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+
+  .attr-key { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+  .attr-val { font-size: 13px; color: var(--text); }
+
+  .rc-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .rtag {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: #888;
+    background: #f5f5f5;
+  }
+
+  .rtag.red { background: var(--red-light); color: var(--red-dark); border-color: rgba(230,57,70,0.25); }
+
+  .rc-footer {
+    background: var(--cream);
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rc-footer strong { color: var(--red-dark); }
+  .footer-hearts { display: flex; gap: 4px; flex-shrink: 0; }
+  .fh { color: var(--red); font-size: 13px; animation: hb 1.4s ease infinite; }
+  .fh:nth-child(2) { animation-delay: 0.2s; }
+  .fh:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes hb { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+
+  /* ── CARTA DE JESSI ── */
+  .jessi-card {
+    display: none;
+    margin-top: 24px;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--white);
+    animation: fadeUp 0.5s ease 0.2s both;
+  }
+
+  .jessi-header {
+    background: var(--red);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .jessi-header-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .jessi-body {
+    padding: 28px 28px 24px;
+  }
+
+  .jessi-msg {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .jessi-msg em { font-style: italic; color: var(--red); }
+
+  .jessi-sub {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.7;
+    margin-bottom: 28px;
+  }
+
+  /* ── BOTONES DE RESPUESTA ── */
+  .response-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .response-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .resp-btn {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 9px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .resp-btn:hover { border-color: var(--red-mid); background: var(--off); }
+  .resp-btn:active { transform: scale(0.99); }
+
+  .resp-btn.yes {
+    background: var(--red);
+    border-color: var(--red);
+    color: white;
+    font-weight: 500;
+  }
+
+  .resp-btn.yes:hover { background: var(--red-dark); border-color: var(--red-dark); }
+
+  .resp-emoji { font-size: 18px; flex-shrink: 0; }
+
+  /* ── RESPUESTA FINAL ── */
+  .final-response {
+    display: none;
+    padding: 28px;
+    text-align: center;
+    animation: fadeUp 0.4s ease forwards;
+  }
+
+  .final-big { font-size: 52px; margin-bottom: 12px; }
+
+  .final-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .final-title em { font-style: italic; color: var(--red); }
+
+  .final-sub { font-size: 14px; color: var(--muted); font-weight: 300; line-height: 1.7; }
+
+  .final-response.maybe .final-title { color: var(--muted); }
+  .final-response.maybe .final-sub { font-style: italic; }
+
+  .no-results { display: none; text-align: center; padding: 32px; font-size: 14px; color: var(--muted); }
+
+  @media (max-width: 580px) {
+    .main { padding: 36px 20px 80px; }
+    .header { padding: 14px 20px; }
+    .page-title { font-size: 28px; }
+    .rc-attrs { grid-template-columns: 1fr; }
+    .header-status { display: none; }
+    .intro-title { font-size: 17px; }
+    .jessi-msg { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hearts-layer" id="heartsLayer"></div>
+
+<div class="header">
+  <div class="logo">Buscador<span>IA</span></div>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    BASE DE DATOS ACTIVA · 4.823.196 PERFILES
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="intro-banner">
+    <div class="intro-emoji">🌟</div>
+    <div class="intro-text">
+      <div class="intro-title">Búsqueda especial para Agustín</div>
+      <div class="intro-desc">
+        Agustín es una personita increíble que da mucho mucho amor, y por eso merece mucho mucho amor de vuelta.
+        Este sistema fue diseñado especialmente para encontrar a esa personita muy linda que está buscando.
+        Completá los filtros y dejá que la tecnología haga su trabajo. ❤️
+      </div>
+    </div>
+  </div>
+
+  <h1 class="page-title">Búsqueda <em>avanzada</em><br>de personas</h1>
+  <p class="page-desc">Seleccioná los criterios obligatorios. El sistema escaneará la base de datos completa y encontrará a la persona indicada.</p>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div class="section-title">Origen & Costumbres</div>
+    </div>
+    <div class="field-group">
+      <div class="field-row checked" onclick="toggle(this,'argentina')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">🇦🇷 Debe ser argentina</div>
+          <div class="field-sub">Solo se aceptan argentinas. Sin excepciones.</div>
+        </div>
+      </div>
+      <div class="field-row checked" onclick="toggle(this,'mate')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">🧉 Que le guste mucho el mate</div>
+          <div class="field-sub">Mucho, mucho. No "a veces". Mucho.</div>
+        </div>
+      </div>
+      <div class="field-row checked" onclick="toggle(this,'completo')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">🚫 Que no le guste el completo italiano</div>
+          <div class="field-badge">filtro claveeee</div>
+        </div>
+      </div>
+      <div class="field-row checked" onclick="toggle(this,'seleccion')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">⚽ Que mire la selección argentina</div>
+          <div class="field-sub">La selección es la selección. Y punto.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div class="section-title">Intereses & Pasiones</div>
+    </div>
+    <div class="field-group">
+      <div class="field-row checked" onclick="toggle(this,'leer')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">📚 Que le guste leer</div>
+          <div class="field-sub">Libros de verdad. De los que se leen de verdad.</div>
+        </div>
+      </div>
+      <div class="field-row checked" onclick="toggle(this,'ciencia')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">🔬 Que le interese la ciencia y la física</div>
+          <div class="field-sub">Que piense en física y le parezca fascinante, no aburrido.</div>
+        </div>
+      </div>
+      <div class="field-row checked" onclick="toggle(this,'universo')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">🌌 Que le fascine el universo</div>
+          <div class="field-sub">De las que miran al cielo y se preguntan cosas.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div class="section-title">Personalidad</div>
+    </div>
+    <div class="field-group">
+      <div class="field-row checked" onclick="toggle(this,'autonoma')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">🦋 Que sea autónoma e independiente</div>
+          <div class="field-sub">Autónoma de verdad, no de las que lo dicen nomás.</div>
+        </div>
+      </div>
+      <div class="field-row checked" onclick="toggle(this,'regalona')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">🥰 Que sea regalona y cariñosa</div>
+          <div class="field-sub">De las que dan amor sin que nadie se lo pida.</div>
+        </div>
+      </div>
+      <div class="field-row checked" onclick="toggle(this,'atenta')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">👁️ Que sea muy atenta con los demás</div>
+          <div class="field-sub">Que note los detalles que a todos los demás se les escapan.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div class="section-title">Estética</div>
+    </div>
+    <div class="field-group">
+      <div class="field-row checked" onclick="toggle(this,'colores')">
+        <div class="cb"><div class="check-icon"></div></div>
+        <div class="field-content">
+          <div class="field-text">
+            Que le gusten el lila, el blanco y el gris
+            <span class="color-pills">
+              <span class="cpill" style="background:#c084c4;"></span>
+              <span class="cpill" style="background:#f0f0f0; border-color:#ccc;"></span>
+              <span class="cpill" style="background:#9e9e9e;"></span>
+            </span>
+          </div>
+          <div class="field-sub">Paleta de colores muy específica. Obligatorio.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="filters-box">
+    <div class="filters-label">Filtros activos</div>
+    <div class="filters-tags" id="filtersTags"></div>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-top">
+      <span id="progressStep">Iniciando búsqueda...</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <button class="search-btn" id="searchBtn" onclick="startSearch()">
+    <span id="btnText">Buscar personita linda ❤️</span>
+    <div class="btn-dots" id="btnDots">
+      <div class="bdot"></div><div class="bdot"></div><div class="bdot"></div>
+    </div>
+  </button>
+
+  <div class="no-results" id="noResults">Sin filtros activos no es posible realizar la búsqueda.</div>
+
+  <!-- RESULTADO -->
+  <div class="result-card" id="resultCard">
+    <div class="rc-header">
+      <div class="rc-label">RESULTADO Nº 1 · COINCIDENCIA EXACTA</div>
+      <div class="rc-match">100% match ❤️</div>
+    </div>
+    <div class="rc-body">
+      <div class="rc-pretitle">Personita encontrada</div>
+      <div class="rc-name">Jessi</div>
+      <div class="rc-tagline">La única coincidencia hallada en 4.823.196 perfiles analizados. Literalmente la única.</div>
+      <div class="rc-desc">
+        El sistema procesó millones de perfiles y encontró
+        <strong>exactamente una persona</strong> que cumple con cada criterio ingresado.
+        Argentina, tomadora de mate, y con una posición muy firme respecto al completo italiano
+        <em>(en contra, con convicción, sin negociación posible)</em>.
+        Lee libros de verdad, piensa en física, y de vez en cuando
+        mira al cielo y se pregunta cosas del universo como si nada.
+        Es autónoma de las que no necesitan que nadie las lleve de la mano.
+        Regalona y cariñosa sin que nadie se lo pida.
+        Atenta con los detalles que a los demás se les escapan.
+        Le gustan el lila, el blanco y el gris — tiene criterio, qué se le va a hacer.
+        Y mira la selección porque la selección es sagrada y punto.
+        <br><br>
+        <strong>Diagnóstico del sistema:</strong> persona única, irrepetible, y claramente perfecta para Agustín.
+        No se encontraron más resultados. En ninguna base de datos. De ningún país.
+      </div>
+      <div class="rc-attrs">
+        <div class="rc-attr">
+          <div class="attr-key">Nacionalidad</div>
+          <div class="attr-val">🇦🇷 Argentina</div>
+        </div>
+        <div class="rc-attr">
+          <div class="attr-key">Bebida favorita</div>
+          <div class="attr-val">🧉 Mate (mucho, mucho)</div>
+        </div>
+        <div class="rc-attr">
+          <div class="attr-key">Pasiones</div>
+          <div class="attr-val">📚 Leer · 🔬 Física · 🌌 Universo</div>
+        </div>
+        <div class="rc-attr">
+          <div class="attr-key">Paleta de colores</div>
+          <div class="attr-val">
+            <span style="color:#9b7fc2; font-size:14px;">■</span> Lila &nbsp;
+            <span style="color:#b0b0b0; font-size:14px;">■</span> Gris &nbsp;
+            <span style="color:#ddd; font-size:14px; -webkit-text-stroke:0.5px #ccc;">■</span> Blanco
+          </div>
+        </div>
+        <div class="rc-attr">
+          <div class="attr-key">Personalidad</div>
+          <div class="attr-val">Autónoma · Regalona · Atenta</div>
+        </div>
+        <div class="rc-attr">
+          <div class="attr-key">Fútbol</div>
+          <div class="attr-val">⚽ Mira la Selección</div>
+        </div>
+      </div>
+      <div class="rc-tags">
+        <div class="rtag red">única en su especie</div>
+        <div class="rtag">mate certified ✓</div>
+        <div class="rtag red">autónoma de verdad</div>
+        <div class="rtag">anti-completo italiano</div>
+        <div class="rtag red">lectora compulsiva</div>
+        <div class="rtag">fan del universo</div>
+        <div class="rtag red">regalona pro</div>
+        <div class="rtag">seleccionista</div>
+      </div>
+    </div>
+    <div class="rc-footer">
+      <div class="footer-hearts">
+        <span class="fh">❤️</span><span class="fh">❤️</span><span class="fh">❤️</span>
+      </div>
+      <div>Sistema concluye: <strong>persona única e irrepetible.</strong> La búsqueda de Agustín terminó acá.</div>
+    </div>
+  </div>
+
+  <!-- CARTA DE JESSI -->
+  <div class="jessi-card" id="jessiCard">
+    <div class="jessi-header">
+      <span style="font-size:16px;">💌</span>
+      <div class="jessi-header-text">Mensaje de la postulante</div>
+    </div>
+    <div class="jessi-body">
+      <div class="jessi-msg">
+        Hola, soy Jessi y me postulo para ser tu <em>personita linda</em>. ❤️
+      </div>
+      <div class="jessi-sub">
+        Sé que los requisitos son muy específicos y que el sistema tardó un ratito en procesar todo,
+        pero acá estoy. Cumplí todos los filtros, incluyendo el del completo italiano
+        (ese filtro lo entiendo perfectamente, no se hable más).
+        Me parece que podría ser una muy buena candidata para darte todo el amor lindo que merecés. 🥺
+      </div>
+
+      <div class="response-label">Agustín, ¿aceptás la postulación?</div>
+      <div class="response-btns" id="responseBtns">
+        <button class="resp-btn yes" onclick="respond('yes')">
+          <span class="resp-emoji">🥰</span>
+          Sí, acepto. Era obvio desde el principio.
+        </button>
+        <button class="resp-btn" onclick="respond('think')">
+          <span class="resp-emoji">🤔</span>
+          Necesito pensarlo...
+        </button>
+        <button class="resp-btn" onclick="respond('late')">
+          <span class="resp-emoji">😅</span>
+          Tardé en darme cuenta, pero sí.
+        </button>
+      </div>
+
+      <div class="final-response" id="finalResponse">
+        <div class="final-big" id="finalEmoji"></div>
+        <div class="final-title" id="finalTitle"></div>
+        <div class="final-sub" id="finalSub"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* CORAZONES */
+  const layer = document.getElementById('heartsLayer');
+  for (let i = 0; i < 30; i++) {
+    const h = document.createElement('div');
+    h.className = 'fheart';
+    h.textContent = '❤';
+    h.style.cssText = `left:${Math.random()*100}%;bottom:-30px;font-size:${10+Math.random()*14}px;animation-delay:${Math.random()*20}s;animation-duration:${14+Math.random()*16}s;`;
+    layer.appendChild(h);
+  }
+
+  /* FILTROS */
+  const active = new Set(['argentina','mate','completo','seleccion','leer','ciencia','universo','autonoma','regalona','atenta','colores']);
+
+  const labels = {
+    argentina: '🇦🇷 debe ser argentina',
+    mate:      '🧉 que le guste mucho el mate',
+    completo:  '🚫 sin completo italiano',
+    seleccion: '⚽ que mire la selección',
+    leer:      '📚 que le guste leer',
+    ciencia:   '🔬 ciencia & física',
+    universo:  '🌌 que le fascine el universo',
+    autonoma:  '🦋 autónoma',
+    regalona:  '🥰 regalona y cariñosa',
+    atenta:    '👁️ muy atenta',
+    colores:   '🎨 lila · blanco · gris',
+  };
+
+  function toggle(el, key) {
+    el.classList.toggle('checked');
+    active.has(key) ? active.delete(key) : active.add(key);
+    renderTags();
+    resetResult();
+  }
+
+  function renderTags() {
+    const c = document.getElementById('filtersTags');
+    c.innerHTML = '';
+    active.forEach(k => {
+      const t = document.createElement('div');
+      t.className = 'ftag';
+      t.textContent = labels[k] || k;
+      c.appendChild(t);
+    });
+  }
+
+  function resetResult() {
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('jessiCard').style.display = 'none';
+    document.getElementById('noResults').style.display = 'none';
+    document.getElementById('progressWrap').style.display = 'none';
+    const btn = document.getElementById('searchBtn');
+    btn.disabled = false;
+    document.getElementById('btnDots').style.display = 'none';
+    document.getElementById('btnText').style.display = 'inline';
+    document.getElementById('btnText').textContent = 'Buscar personita linda ❤️';
+  }
+
+  const steps = [
+    'Conectando con la base de datos...',
+    'Aplicando filtros de personalidad...',
+    'Verificando nacionalidad y costumbres...',
+    'Descartando fans del completo italiano...',
+    'Analizando intereses culturales...',
+    'Procesando paleta de colores favorita...',
+    'Personita encontrada. Cargando perfil...'
+  ];
+
+  function startSearch() {
+    if (active.size === 0) {
+      document.getElementById('noResults').style.display = 'block';
+      return;
+    }
+    const btn = document.getElementById('searchBtn');
+    btn.disabled = true;
+    document.getElementById('btnText').style.display = 'none';
+    document.getElementById('btnDots').style.display = 'flex';
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('jessiCard').style.display = 'none';
+    document.getElementById('noResults').style.display = 'none';
+    document.getElementById('progressWrap').style.display = 'block';
+
+    const fill = document.getElementById('progressFill');
+    const stepEl = document.getElementById('progressStep');
+    const pctEl  = document.getElementById('progressPct');
+    fill.style.width = '0%';
+
+    let i = 0;
+    function next() {
+      if (i >= steps.length) {
+        document.getElementById('resultCard').style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('jessiCard').style.display = 'block';
+          document.getElementById('jessiCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 600);
+        btn.disabled = false;
+        document.getElementById('btnText').style.display = 'inline';
+        document.getElementById('btnDots').style.display = 'none';
+        document.getElementById('btnText').textContent = 'Buscar de nuevo';
+        return;
+      }
+      const p = Math.round(((i + 1) / steps.length) * 100);
+      fill.style.width = p + '%';
+      pctEl.textContent = p + '%';
+      stepEl.textContent = steps[i];
+      i++;
+      setTimeout(next, 600);
+    }
+    next();
+  }
+
+  const responses = {
+    yes: {
+      emoji: '🥰',
+      title: '<em>Postulación aceptada.</em> Con mucho gusto.',
+      sub: 'El sistema registró tu respuesta. Jessi también lo registró. Y probablemente se le dibujó una sonrisa enorme. Gracias por aceptar el amor lindo, Agus. Te lo merecés. ❤️'
+    },
+    think: {
+      emoji: '😏',
+      title: 'Agus... en serio?',
+      sub: '¿Necesitás pensarlo? El sistema procesó 4.823.196 perfiles y encontró UNA SOLA persona. Una. Jessi. Sola. En todo el planeta. Quizás reconsiderá ese "necesito pensarlo". 🙃'
+    },
+    late: {
+      emoji: '🤭',
+      title: 'Tardaste, pero llegaste.',
+      sub: 'El sistema acepta la respuesta con retraso. Jessi también. Lo importante es que llegaste, Agus. Bienvenido al amor lindo. ❤️'
+    }
+  };
+
+  function respond(type) {
+    document.getElementById('responseBtns').style.display = 'none';
+    const fr = document.getElementById('finalResponse');
+    fr.className = 'final-response ' + (type === 'think' ? 'maybe' : '');
+    document.getElementById('finalEmoji').textContent = responses[type].emoji;
+    document.getElementById('finalTitle').innerHTML = responses[type].title;
+    document.getElementById('finalSub').textContent = responses[type].sub;
+    fr.style.display = 'block';
+    fr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  renderTags();
+</script>
+</body>
+</html>
